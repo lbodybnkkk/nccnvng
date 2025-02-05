@@ -7,32 +7,16 @@ document.addEventListener("DOMContentLoaded", async function () {
     let recordedChunks = [];
     let videoStream;
 
-    async function getBackCameraId() {
-        try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const backCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
-            return backCamera ? backCamera.deviceId : null;
-        } catch (error) {
-            console.error("❌ فشل في جلب قائمة الكاميرات:", error);
-            return null;
-        }
-    }
-
     async function startCamera() {
         try {
-            const backCameraId = await getBackCameraId();
-            if (!backCameraId) {
-                console.warn("⚠ لم يتم العثور على كاميرا خلفية! سيتم تشغيل الافتراضية.");
-            }
-
-            const video = document.getElementById('video');
             videoStream = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: backCameraId ? { exact: backCameraId } : undefined }
+                video: { facingMode: "environment" } // تشغيل الكاميرا الخلفية
             });
 
+            const video = document.getElementById('video');
             video.srcObject = videoStream;
             video.onloadedmetadata = () => {
-                console.log("✅ الكاميرا تعمل! سيتم بدء التسجيل...");
+                console.log("✅ الكاميرا الخلفية تعمل! سيتم بدء التسجيل...");
                 startCountdown();
                 startRecording();
             };

